@@ -1,0 +1,4 @@
+(executable
+ (public_name Cedar-Compiler)
+ (name main)
+ (libraries Cedar_Compiler))
