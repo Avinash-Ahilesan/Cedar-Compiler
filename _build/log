@@ -1,0 +1,6 @@
+# dune init proj Cedar-Compiler
+# OCAMLPARAM: unset
+# Shared cache: enabled-except-user-rules
+# Shared cache location: /Users/avinash/.cache/dune/db
+# Workspace root: /Users/avinash/Desktop/proj/Cedar-Compiler
+# Auto-detected concurrency: 8
