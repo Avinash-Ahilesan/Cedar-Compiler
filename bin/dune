@@ -1,5 +1,5 @@
 (executable
  (public_name Cedar-Compiler)
  (name main)
- (modules main lexer)
+ (modules main)
  (libraries Cedar_Compiler))
