@@ -23,15 +23,13 @@ type token =
   | If
   | Else
   | Fun
-  (* boolean true/false *)
-  | True
-  | False
   (* syntax *)
   | OpenRoundBracket
   | CloseRoundBracket
   | OpenCurlyBracket
   | CloseCurlyBracket
   | Semicolon
+  | EOF
 
 
 let ic = open_in file
@@ -57,8 +55,8 @@ let lex_keywords str =
     | "if" ->  Some If
     | "else" -> Some Else
     | "fun" -> Some Fun
-    | "true" -> Some True
-    | "false" -> Some False
+    | "true" -> Some (Boolean true)
+    | "false" -> Some (Boolean false)
     | _ -> None
 
 
@@ -104,6 +102,7 @@ let lex_comparator input_line posn =
     | '>' -> (match nextChar with None -> (posn + 1, GreaterThan) | Some next -> (if next = '=' then (posn + 2, GreaterThanEquals) else (posn + 1, GreaterThan)))
     | '<' -> (match nextChar with None -> (posn + 1, LessThan) | Some next -> (if next = '=' then (posn + 2, LessThanEquals) else (posn + 1, LessThan)))
     | _ -> raise Lexer_Error_Unexpected_Char
+
 let lex_line input_line = 
   let rec lex_helper posn token_list =
     if posn < (String.length input_line) then 
@@ -125,6 +124,7 @@ let lex_line input_line =
           | '"' -> let (new_pos, str) = (lex_string input_line (posn + 1) "") in (lex_helper new_pos (str :: token_list))
           | ' ' -> lex_helper (posn + 1) token_list
           | '>' -> let (new_pos, token) = (lex_comparator input_line posn) in (lex_helper new_pos (token :: token_list))
+          | '<' -> let (new_pos, token) = (lex_comparator input_line posn) in (lex_helper new_pos (token :: token_list))
           | currChar when is_number currChar -> let (new_pos, num) = (lex_number input_line posn 0) in (lex_helper new_pos (num :: token_list))
           | currChar when is_alphabetical currChar -> let (new_pos, token) = (lex_ident_or_keywords input_line posn "") in (lex_helper new_pos (token :: token_list)) 
           | _ -> raise Lexer_Error_Unknown_Char
@@ -148,13 +148,19 @@ let token_to_string = function
   | String (x) -> "string: " ^ x
   | Assign -> "assign: ="
   | If -> "If: if"
-  | True -> "bool: true"
-  | False -> "bool: false"
+  | Boolean (x) -> "bool: " ^ (string_of_bool x)
   | GreaterThan -> ">"
   | _ -> "To Implement"
 
+let token_list = lex []
+let token_ptr : int ref = {contents = 0}
 
-let print_tokens () = List.iter (Printf.printf "%s\n") (List.map token_to_string (lex []))
-  
+
+let next_token () = 
+  if !token_ptr < List.length token_list then 
+    let next_token_ptr = !token_ptr in
+      token_ptr := !token_ptr + 1;
+      List.nth token_list next_token_ptr
+  else EOF
 
 
