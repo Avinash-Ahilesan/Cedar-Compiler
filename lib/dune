@@ -1,2 +1,3 @@
 (library
- (name Cedar_Compiler))
+ (name Cedar_Compiler)
+ (libraries base))

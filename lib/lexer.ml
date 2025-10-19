@@ -66,7 +66,8 @@ let rec lex_ident_or_keywords line posn str =
     let currChar = String.get line posn in
       match currChar with
         | 'a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '0' -> lex_ident_or_keywords line (posn + 1) (str ^ String.make  1 currChar)
-        | ' ' ->  (match (lex_keywords str) with None -> (posn + 1, Identifier (str)) | Some x -> (posn + 1, x))
+        | ' ' -> (match (lex_keywords str) with None -> (posn + 1, Identifier (str)) | Some x -> (posn + 1, x))
+        | ';' -> (match (lex_keywords str) with None -> (posn, Identifier (str)) | Some x -> (posn, x))
         | _ -> raise Lexer_Error_Unexpected_Char
 
 let rec lex_string line posn str = 
@@ -85,6 +86,7 @@ let rec lex_number line posn num =
       | '0' .. '9' -> if posn + 1 >= String.length line then (posn + 1, Integer (((num * 10) + (Char.code currChar - Char.code '0'))))
                       else lex_number line (posn + 1) ( (num * 10) + (Char.code currChar - Char.code '0'))
       | ' ' -> (posn + 1, Integer(num))
+      | ';' -> (posn, Integer(num))
       | _ -> raise Lexer_Error_Unexpected_Char
 
 let is_number = function
@@ -150,6 +152,11 @@ let token_to_string = function
   | If -> "If: if"
   | Boolean (x) -> "bool: " ^ (string_of_bool x)
   | GreaterThan -> ">"
+  | Plus -> "+" 
+  | Minus -> "-"
+  | Multiply -> "*"
+  | Divide -> "/"
+  | Semicolon -> ";"
   | _ -> "To Implement"
 
 let token_list = lex []
