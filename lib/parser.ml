@@ -21,7 +21,10 @@ type expr =
   | Expr of expr * op * expr
 
 let init = 
-  {current = next_token(); peek = next_token()}
+  let curr = next_token ()
+    in 
+    let next = next_token () in
+      {current = curr; peek = next}
 
 let advance parser =
   {current = parser.peek; peek = next_token()}
@@ -38,43 +41,35 @@ let parse_factor parser =
 
 let parse_op parser = 
   match parser.current with
-    | Lexer.Multiply -> Ok (advance parser, Multiply, 2.0, 2.1)
-    | Lexer.Divide -> Ok (advance parser, Divide, 2.0, 2.1) 
-    | Lexer.Plus -> Ok (advance parser, Plus, 1.0, 1.1)
-    | Lexer.Minus -> Ok (advance parser, Minus, 1.0, 1.1)
-    | _ -> Error "Error parsing operation"
+    | Lexer.Multiply -> Ok (Multiply, 2.0, 2.1)
+    | Lexer.Divide -> Ok (Divide, 2.0, 2.1) 
+    | Lexer.Plus -> Ok (Plus, 1.0, 1.1)
+    | Lexer.Minus -> Ok ( Minus, 1.0, 1.1)
+    | _ -> Error ("Error parsing operation: " ^ token_to_string parser.current)
   
 let peek_is parser tok =
   if parser.peek = tok then true else false
 
+(* a + b * c + d*)
 let rec parse_expr parser min_bp = 
   let* lhs = parse_factor parser in
-  if peek_is parser Semicolon then Ok lhs
+  if peek_is parser Semicolon then Ok (lhs, parser)
   else 
     let parser = advance parser in
-      let* parser, op, lbp, rbp = (parse_op parser) in
-      if min_bp > lbp then  Ok lhs else 
-      let* rhs = parse_expr parser rbp in
-        Ok (Expr (lhs, op, rhs))
+    let rec process_op lhs' parser = 
+      if peek_is parser Semicolon then Ok (lhs', parser)
+      else
+        let* op, lbp, rbp = (parse_op parser) in
+        if  lbp < min_bp then  Ok (lhs', parser) else 
+        let parser = advance parser in
+         let* rhs, parser = parse_expr parser rbp in
+          (process_op (Expr (lhs', op, rhs)) parser) in 
+           (process_op lhs parser)
+
+
 
 let parse () = 
   let parser = init in
-    parse_expr parser 0.0
+    let* lhs, _ = (parse_expr parser 0.0) in  Ok lhs
 
 
-
-let print_factor a = 
-  match a with 
-    | IntFactor x -> print_endline (string_of_int x)
-    | IdentFactor x -> print_endline x
-let print_op op = 
-  match op with 
-    | Multiply -> print_endline "*"
-    | Divide -> print_endline "/"
-    | Plus -> print_endline "+"
-    | Minus -> print_endline "-"
-
-let rec print_expr expr = 
-  match expr with
-    | Factor a -> print_factor a
-    | Expr (lhs, _, _) -> print_expr lhs

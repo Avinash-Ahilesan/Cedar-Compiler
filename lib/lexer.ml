@@ -152,9 +152,9 @@ let token_to_string = function
   | If -> "If: if"
   | Boolean (x) -> "bool: " ^ (string_of_bool x)
   | GreaterThan -> ">"
-  | Plus -> "+" 
-  | Minus -> "-"
-  | Multiply -> "*"
+  | Plus -> ": +" 
+  | Minus -> ": -"
+  | Multiply -> ": *"
   | Divide -> "/"
   | Semicolon -> ";"
   | _ -> "To Implement"
