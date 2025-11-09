@@ -19,6 +19,8 @@ type token =
   | Minus
   | Multiply
   | Divide
+  | Increment
+  | Decrement
   (* keywords *)
   | If
   | Else
@@ -86,8 +88,7 @@ let rec lex_number line posn num =
       | '0' .. '9' -> if posn + 1 >= String.length line then (posn + 1, Integer (((num * 10) + (Char.code currChar - Char.code '0'))))
                       else lex_number line (posn + 1) ( (num * 10) + (Char.code currChar - Char.code '0'))
       | ' ' -> (posn + 1, Integer(num))
-      | ';' -> (posn, Integer(num))
-      | _ -> raise Lexer_Error_Unexpected_Char
+      | _ -> (posn, Integer(num))
 
 let is_number = function
   | '0' .. '9' -> true
@@ -119,7 +120,10 @@ let lex_line input_line =
           | '}' -> lex_next (CloseCurlyBracket :: token_list)
           | ';' -> lex_next (Semicolon :: token_list)
           | '=' -> lex_next (Assign :: token_list)
-          | '+' -> lex_next (Plus :: token_list)
+          | '+' -> if posn + 1 < String.length input_line then 
+                      if String.get input_line (posn + 1) = '+' then (lex_helper (posn + 2) (Increment :: token_list))
+                      else lex_next (Plus :: token_list)
+                  else lex_next (Plus :: token_list)
           | '-' -> lex_next (Minus :: token_list)
           | '/' -> lex_next (Divide :: token_list)
           | '*' -> lex_next (Multiply :: token_list)
@@ -157,6 +161,8 @@ let token_to_string = function
   | Multiply -> ": *"
   | Divide -> "/"
   | Semicolon -> ";"
+  | OpenRoundBracket -> "("
+  | CloseRoundBracket -> ")"
   | _ -> "To Implement"
 
 let token_list = lex []

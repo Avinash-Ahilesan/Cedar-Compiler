@@ -14,7 +14,8 @@ let get_op op =
 let rec get_expr expr = 
   match expr with
     | Factor a ->  (get_factor a)
-    | Expr (lhs, op, rhs) -> "(" ^ get_op op ^ " " ^ get_expr lhs ^ " " ^ get_expr rhs ^ ")"
+    | InfixExpr (lhs, op, rhs) -> "(" ^ get_op op ^ " " ^ get_expr lhs ^ " " ^ get_expr rhs ^ ")"
+    | _ -> "Here"
 
 let print_expr expr = 
   print_endline (get_expr expr)

@@ -10,5 +10,5 @@ let () = print_all_tokens () *)
 
 
 let () = match (Parser.parse ()) with
-  | Ok e -> Parser.print_expr e 
+  | Ok e -> Parser_printer.print_expr e 
   | Error s -> print_endline s

@@ -12,13 +12,23 @@ type op =
   | Minus
 
 
-type factor =
+type node = 
+  | Statement of statement
+  | Expression of expr
+
+and statement = 
+  | IfStatement
+  | VariableStatement
+
+and expr =
+  | Factor of factor
+  | InfixExpr of expr * op * expr
+  | PrefixExpr of op * expr
+  | PostfixExpr of expr * op
+
+and factor =
   | IntFactor of int
   | IdentFactor of string
-
-type expr =
-  | Factor of factor
-  | Expr of expr * op * expr
 
 let init = 
   let curr = next_token ()
@@ -33,40 +43,41 @@ let advance parser =
 let ( let* ) res f = Base.Result.bind res ~f
 
 
-let parse_factor parser = 
-  match parser.current with 
-  | Identifier (name) -> Ok (Factor (IdentFactor (name)))
-  | Integer (value) -> Ok (Factor (IntFactor (value)))
-  | _ -> Error ("Error expected factor, didn't find one. Token: " ^ (Lexer.token_to_string parser.current))
 
 let parse_op parser = 
   match parser.current with
     | Lexer.Multiply -> Ok (Multiply, 2.0, 2.1)
     | Lexer.Divide -> Ok (Divide, 2.0, 2.1) 
     | Lexer.Plus -> Ok (Plus, 1.0, 1.1)
-    | Lexer.Minus -> Ok ( Minus, 1.0, 1.1)
+    | Lexer.Minus -> Ok (Minus, 1.0, 1.1)
     | _ -> Error ("Error parsing operation: " ^ token_to_string parser.current)
   
 let peek_is parser tok =
   if parser.peek = tok then true else false
 
-(* a + b * c + d*)
-let rec parse_expr parser min_bp = 
-  let* lhs = parse_factor parser in
-  if peek_is parser Semicolon then Ok (lhs, parser)
+(* ( a + b) * c + d*)
+let rec parse_prefix_expr parser = 
+  match parser.current with 
+  | Identifier (name) -> Ok (Factor (IdentFactor (name)), parser)
+  | Integer (value) -> Ok (Factor (IntFactor (value)), parser)
+  | OpenRoundBracket -> let parser' = advance parser in 
+                          let* expr, parser = (parse_expr parser' 0.0) in 
+                            if peek_is parser CloseRoundBracket then Ok (expr, advance parser) else Error "No closing bracket"
+  | _ -> Error ("Error expected factor, didn't find one. Token: " ^ (Lexer.token_to_string parser.current))
+and parse_expr parser min_bp = 
+  let* lhs, parser = parse_prefix_expr parser in
+  if peek_is parser Semicolon || peek_is parser CloseRoundBracket then Ok (lhs, parser)
   else 
     let parser = advance parser in
-    let rec process_op lhs' parser = 
-      if peek_is parser Semicolon then Ok (lhs', parser)
+    let rec parse_infix_op lhs' parser = 
+      if peek_is parser Semicolon || peek_is parser CloseRoundBracket then Ok (lhs', parser)
       else
         let* op, lbp, rbp = (parse_op parser) in
         if  lbp < min_bp then  Ok (lhs', parser) else 
         let parser = advance parser in
          let* rhs, parser = parse_expr parser rbp in
-          (process_op (Expr (lhs', op, rhs)) parser) in 
-           (process_op lhs parser)
-
-
+          (parse_infix_op (InfixExpr (lhs', op, rhs)) parser) in 
+           (parse_infix_op lhs parser)
 
 let parse () = 
   let parser = init in

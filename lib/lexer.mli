@@ -17,6 +17,8 @@ type token =
   | Minus
   | Multiply
   | Divide
+  | Increment
+  | Decrement
   (* keywords *)
   | If
   | Else
