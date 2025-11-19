@@ -3,6 +3,7 @@ open Lexer
 type t = {
   current: Lexer.token;
   peek: Lexer.token;
+  lexer: Lexer.lexer;
 }
 
 type op = 
@@ -10,7 +11,6 @@ type op =
   | Divide
   | Plus
   | Minus
-
 
 type node = 
   | Statement of statement
@@ -30,14 +30,15 @@ and factor =
   | IntFactor of int
   | IdentFactor of string
 
-let init = 
-  let curr = next_token ()
+let init lexer = 
+  let lex_state, curr = next_token lexer
     in 
-    let next = next_token () in
-      {current = curr; peek = next}
+      let peek_lex_state, next_token = (next_token lex_state) in
+        {current = curr; peek = next_token; lexer = peek_lex_state}
 
 let advance parser =
-  {current = parser.peek; peek = next_token()}
+  let lex_state, peek = next_token parser.lexer in
+    {current = parser.peek; peek = peek; lexer = lex_state}
 
 
 let ( let* ) res f = Base.Result.bind res ~f
@@ -79,8 +80,8 @@ and parse_expr parser min_bp =
           (parse_infix_op (InfixExpr (lhs', op, rhs)) parser) in 
            (parse_infix_op lhs parser)
 
-let parse () = 
-  let parser = init in
+let parse lexer = 
+  let parser = init lexer in
     let* lhs, _ = (parse_expr parser 0.0) in  Ok lhs
 
 

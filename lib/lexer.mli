@@ -31,6 +31,14 @@ type token =
   | Semicolon
   | EOF
 
+type lexer = {
+  token_list: token list;
+  token_ptr: int;
+}
 
-val next_token : unit -> token
+val next_token : lexer -> lexer * token
 val token_to_string : token -> string
+
+val lex_text_block: string -> token list
+
+val lex: unit -> lexer

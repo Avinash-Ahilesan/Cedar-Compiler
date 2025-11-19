@@ -1,4 +1,4 @@
-let file = "./test_code/test_code.cedar"
+let file = "test_code/test_code.cedar"
 
 type token = 
   | Identifier of string
@@ -33,18 +33,20 @@ type token =
   | Semicolon
   | EOF
 
+type lexer = {
+  token_list: token list;
+  token_ptr: int;
+}
 
-let ic = open_in file
+let read_line ic () =
+      try
+          input_line ic
+      with e ->
+          close_in_noerr ic;
+          raise e
 
-let read_line () =
-        try
-            input_line ic
-        with e ->
-            close_in_noerr ic;
-            raise e
-
-let get_next_line () = 
-        match read_line () with
+let get_next_line ic () = 
+        match read_line ic () with
             | x -> Some x
             | exception End_of_file -> None
 
@@ -138,15 +140,20 @@ let lex_line input_line =
       List.rev token_list
   in lex_helper 0 []
 
-  let rec lex token_list = 
-    try
-    let curr_line = (get_next_line()) in
-      match curr_line with
-        | Some line -> List.append token_list (lex (lex_line line))
-        | None -> token_list
-    with e ->
-      print_endline (Printexc.to_string e);
-      raise e
+  let lex () = 
+    let ic = open_in file in
+    let rec lex_helper token_list = 
+      try
+        let curr_line = (get_next_line ic ()) in
+          match curr_line with
+            | Some line -> List.append token_list (lex_helper (lex_line line))
+            | None -> token_list
+      with e ->
+        print_endline (Printexc.to_string e);
+        raise e 
+      in  {token_list = (lex_helper []); token_ptr = 0}
+
+let lex_text_block program = lex_line program
 
 let token_to_string = function
   | Identifier (x) -> "identifier: " ^ x
@@ -161,19 +168,16 @@ let token_to_string = function
   | Multiply -> ": *"
   | Divide -> "/"
   | Semicolon -> ";"
+  | Equals -> "equals: =="
   | OpenRoundBracket -> "("
   | CloseRoundBracket -> ")"
   | _ -> "To Implement"
 
-let token_list = lex []
-let token_ptr : int ref = {contents = 0}
 
-
-let next_token () = 
-  if !token_ptr < List.length token_list then 
-    let next_token_ptr = !token_ptr in
-      token_ptr := !token_ptr + 1;
-      List.nth token_list next_token_ptr
-  else EOF
+let next_token lexer_state = 
+  if  lexer_state.token_ptr < List.length lexer_state.token_list then 
+    let next_state = { token_list = lexer_state.token_list; token_ptr = lexer_state.token_ptr + 1} in
+    (next_state, List.nth lexer_state.token_list lexer_state.token_ptr)
+  else (lexer_state, EOF)
 
 

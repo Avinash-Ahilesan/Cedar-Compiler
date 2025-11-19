@@ -1,13 +1,25 @@
 open Alcotest
+open Cedar_Compiler
+open Lexer
 
-let test_hello_with_name name () =
-  let greeting = "Hello " ^ name ^ "!" in
-  let expected = Printf.sprintf "Hello %s!" name in
-  check string "same string" greeting expected
+
+let equal_token t1 t2 =
+  t1 = t2
+
+let pp_token fmt t =
+  Format.fprintf fmt "{ token type = %s}" (token_to_string t)
+
+let token_testable =
+  Alcotest.testable pp_token equal_token
+
+let test_lex program () =
+  let res = lex_text_block program in
+    let expected = [Identifier("a"); Assign; Integer(5)] in
+    check (list token_testable) "same lists"  expected  res
+
 
 let suite =
-  [ "can greet Tom", `Quick, test_hello_with_name "Tom"
-  ; "can greet John", `Quick, test_hello_with_name "John"
+  [ "can greet Tom", `Quick, test_lex "a = 5"
   ]
 
 let () =
