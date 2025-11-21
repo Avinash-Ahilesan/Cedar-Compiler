@@ -70,9 +70,7 @@ let rec lex_ident_or_keywords line posn str =
     let currChar = String.get line posn in
       match currChar with
         | 'a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '0' -> lex_ident_or_keywords line (posn + 1) (str ^ String.make  1 currChar)
-        | ' ' -> (match (lex_keywords str) with None -> (posn + 1, Identifier (str)) | Some x -> (posn + 1, x))
-        | ';' -> (match (lex_keywords str) with None -> (posn, Identifier (str)) | Some x -> (posn, x))
-        | _ -> raise Lexer_Error_Unexpected_Char
+        | _ -> (match (lex_keywords str) with None -> (posn, Identifier (str)) | Some x -> (posn, x))
 
 let rec lex_string line posn str = 
   if posn >= String.length line then raise (Lexer_Error_Missing_Expected_Char "Missing matching double quote for string")
@@ -89,7 +87,6 @@ let rec lex_number line posn num =
     match currChar with
       | '0' .. '9' -> if posn + 1 >= String.length line then (posn + 1, Integer (((num * 10) + (Char.code currChar - Char.code '0'))))
                       else lex_number line (posn + 1) ( (num * 10) + (Char.code currChar - Char.code '0'))
-      | ' ' -> (posn + 1, Integer(num))
       | _ -> (posn, Integer(num))
 
 let is_number = function
@@ -116,6 +113,7 @@ let lex_line input_line =
       let lex_next new_list = lex_helper (posn + 1) new_list 
       in
         match currChar with 
+          | ' ' -> lex_helper (posn + 1) token_list (* Ignore whitespace*)
           | '(' -> lex_next (OpenRoundBracket :: token_list)
           | ')' -> lex_next (CloseRoundBracket :: token_list)
           | '{' -> lex_next (OpenCurlyBracket :: token_list)
@@ -126,11 +124,13 @@ let lex_line input_line =
                       if String.get input_line (posn + 1) = '+' then (lex_helper (posn + 2) (Increment :: token_list))
                       else lex_next (Plus :: token_list)
                   else lex_next (Plus :: token_list)
-          | '-' -> lex_next (Minus :: token_list)
+          | '-' -> if posn + 1 < String.length input_line then 
+                      if String.get input_line (posn + 1) = '-' then (lex_helper (posn + 2) (Decrement :: token_list))
+                      else lex_next (Minus :: token_list)
+                  else lex_next (Minus :: token_list)
           | '/' -> lex_next (Divide :: token_list)
           | '*' -> lex_next (Multiply :: token_list)
           | '"' -> let (new_pos, str) = (lex_string input_line (posn + 1) "") in (lex_helper new_pos (str :: token_list))
-          | ' ' -> lex_helper (posn + 1) token_list
           | '>' -> let (new_pos, token) = (lex_comparator input_line posn) in (lex_helper new_pos (token :: token_list))
           | '<' -> let (new_pos, token) = (lex_comparator input_line posn) in (lex_helper new_pos (token :: token_list))
           | currChar when is_number currChar -> let (new_pos, num) = (lex_number input_line posn 0) in (lex_helper new_pos (num :: token_list))
@@ -164,6 +164,7 @@ let token_to_string = function
   | Boolean (x) -> "bool: " ^ (string_of_bool x)
   | GreaterThan -> ">"
   | Plus -> ": +" 
+  | Increment -> ": ++"
   | Minus -> ": -"
   | Multiply -> ": *"
   | Divide -> "/"
@@ -171,6 +172,7 @@ let token_to_string = function
   | Equals -> "equals: =="
   | OpenRoundBracket -> "("
   | CloseRoundBracket -> ")"
+  | EOF -> "END OF FILE"
   | _ -> "To Implement"
 
 
