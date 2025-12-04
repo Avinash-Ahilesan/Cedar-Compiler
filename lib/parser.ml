@@ -6,11 +6,16 @@ type t = {
   lexer: Lexer.lexer;
 }
 
-type op = 
+type infix_op = 
   | Multiply
   | Divide
   | Plus
   | Minus
+
+type prefix_op =
+  | Increment
+  | Decrement
+
 
 type node = 
   | Statement of statement
@@ -18,13 +23,14 @@ type node =
 
 and statement = 
   | IfStatement
-  | VariableStatement
+  | FunctionDefinition
+  | VariableAssignment
 
 and expr =
   | Factor of factor
-  | InfixExpr of expr * op * expr
-  | PrefixExpr of op * expr
-  | PostfixExpr of expr * op
+  | InfixExpr of expr * infix_op * expr
+  | PrefixExpr of prefix_op * expr
+  | PostfixExpr of expr * prefix_op
 
 and factor =
   | IntFactor of int
@@ -44,7 +50,6 @@ let advance parser =
 let ( let* ) res f = Base.Result.bind res ~f
 
 
-
 let parse_op parser = 
   match parser.current with
     | Lexer.Multiply -> Ok (Multiply, 2.0, 2.1)
@@ -56,15 +61,18 @@ let parse_op parser =
 let peek_is parser tok =
   if parser.peek = tok then true else false
 
-(* ( a + b) * c + d*)
 let rec parse_prefix_expr parser = 
   match parser.current with 
   | Identifier (name) -> Ok (Factor (IdentFactor (name)), parser)
   | Integer (value) -> Ok (Factor (IntFactor (value)), parser)
+  | Increment -> let parser = advance parser in
+                  let* rhs, parser = (parse_expr parser 8.0) in
+                    let prefix_expr = PrefixExpr ( Increment , rhs) in Ok (prefix_expr, parser)
   | OpenRoundBracket -> let parser' = advance parser in 
                           let* expr, parser = (parse_expr parser' 0.0) in 
                             if peek_is parser CloseRoundBracket then Ok (expr, advance parser) else Error "No closing bracket"
   | _ -> Error ("Error expected factor, didn't find one. Token: " ^ (Lexer.token_to_string parser.current))
+
 and parse_expr parser min_bp = 
   let* lhs, parser = parse_prefix_expr parser in
   if peek_is parser Semicolon || peek_is parser CloseRoundBracket then Ok (lhs, parser)
@@ -79,6 +87,21 @@ and parse_expr parser min_bp =
          let* rhs, parser = parse_expr parser rbp in
           (parse_infix_op (InfixExpr (lhs', op, rhs)) parser) in 
            (parse_infix_op lhs parser)
+
+let rec parse_statement parser =
+  match parser.current with
+    | If -> (parse_if)
+    | Fun -> (parse_fun)
+    | Identifier (_) -> (parse_variable_assign)
+    | _ -> Error ("Could not parse statement")
+
+and parse_if = 
+  Ok IfStatement
+and parse_fun =
+  Ok FunctionDefinition
+and parse_variable_assign =
+  Ok VariableAssignment
+
 
 let parse lexer = 
   let parser = init lexer in

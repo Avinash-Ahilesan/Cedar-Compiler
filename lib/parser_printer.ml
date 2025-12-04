@@ -11,10 +11,16 @@ let get_op op =
     | Plus -> "+"
     | Minus -> "-"
 
+let get_prefix_op op = 
+  match op with
+    | Increment -> "++"
+    | Decrement -> "--"
+
 let rec get_expr expr = 
   match expr with
     | Factor a ->  (get_factor a)
     | InfixExpr (lhs, op, rhs) -> "(" ^ get_op op ^ " " ^ get_expr lhs ^ " " ^ get_expr rhs ^ ")"
+    | PrefixExpr (op, rhs) -> "(" ^ get_prefix_op op ^ " " ^ get_expr rhs ^ ")"
     | _ -> "Here"
 
 let print_expr expr = 
