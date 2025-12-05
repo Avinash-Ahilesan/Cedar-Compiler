@@ -34,6 +34,8 @@ let rec get_expr expr =
     | InfixExpr (lhs, op, rhs) -> "(" ^ get_op op ^ " " ^ get_expr lhs ^ " " ^ get_expr rhs ^ ")"
     | PrefixExpr (op, rhs) -> "(" ^ get_prefix_op op ^ " " ^ get_expr rhs ^ ")"
     | PostfixExpr (rhs, op) -> "(" ^ get_expr rhs ^ " " ^ get_postfix_op op ^ ")"
+    | FunctionCallExpr {fn_name;  args_list} -> let args_list_str = List.fold_left (fun acc x -> acc ^ " " ^ x) "" (List.map get_expr args_list) in 
+                                                      "(() " ^ fn_name ^ args_list_str ^ ")"
 
 let print_expr expr = 
   print_endline (get_expr expr)

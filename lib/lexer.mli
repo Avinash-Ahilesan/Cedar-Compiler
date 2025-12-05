@@ -30,6 +30,7 @@ type token =
   | CloseCurlyBracket
   | OpenSquareBracket
   | CloseSquareBracket
+  | CommaSeparator
   | Semicolon
   | Bang
   | EOF

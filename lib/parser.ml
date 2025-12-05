@@ -42,6 +42,7 @@ and expr =
   | InfixExpr of expr * infix_op * expr
   | PrefixExpr of prefix_op * expr
   | PostfixExpr of expr * postfix_op
+  | FunctionCallExpr of {fn_name: string; args_list: expr list}
 
 and factor =
   | IntFactor of int
@@ -75,7 +76,7 @@ let get_prefix_op_bp parser =
     | Decrement -> Ok (Decrement, 6.0)
     | Minus -> Ok (Minus, 3.0)
     | Plus -> Ok (Plus, 3.0)
-    | _ -> Error ("Error parsing operation: " ^ token_to_string parser.peek)
+    | _ -> Error ("Error parsing operation: " ^ token_to_string parser.current)
   
 let get_postfix_op_bp parser = 
   match parser.peek with
@@ -118,9 +119,10 @@ and parse_expr parser min_bp =
                                   let arr_index_expr = (InfixExpr (lhs', ArrayIndex, rhs)) in 
                                     if peek_is parser CloseSquareBracket then (parse_infix_op arr_index_expr (advance parser)) else Error "No closing square bracket"
                               else if op = FunctionCall then 
-                                let* rhs, parser = (parse_expr (advance (advance parser)) 0.0) in
-                                  let arr_index_expr = (InfixExpr (lhs', FunctionCall, rhs)) in 
-                                    if peek_is parser CloseRoundBracket then (parse_infix_op arr_index_expr (advance parser)) else Error "No closing round bracket"
+                                let* fn_name = get_fn_name lhs in
+                                let* arg_list, parser = (parse_call_expression (advance (advance parser)) []) in
+                                  let function_call_expr = (FunctionCallExpr {fn_name = fn_name; args_list = arg_list}) in 
+                                    if peek_is parser CloseRoundBracket then (parse_infix_op function_call_expr (advance parser)) else Error "No closing round bracket"
                                 
                               else
                                 let postfix_expr = (PostfixExpr (lhs', op)) in 
@@ -133,6 +135,28 @@ and parse_expr parser min_bp =
               (parse_infix_op (InfixExpr (lhs', op, rhs)) parser) 
           | None -> Ok (lhs', parser) 
             in (parse_infix_op lhs parser)
+
+(* a(x, y)*)
+
+and parse_call_expression parser arg_list =
+    let* arg, parser = (parse_expr parser 0.0) in 
+      if peek_is parser CommaSeparator then 
+       (parse_call_expression (advance (advance parser)) (arg:: arg_list))
+    else if peek_is parser CloseRoundBracket then
+      let* arg, parser = (parse_expr parser 0.0) in
+        Ok (List.rev (arg:: arg_list), parser)
+      else Error "Unexpected token"
+
+and get_fn_name node =
+  match node with
+    | Factor (x) -> get_fn_name_from_factor x
+    | _ -> Error "Bad fn name for call"
+and get_fn_name_from_factor x =
+  match x with
+    | IdentFactor (y) -> Ok y
+    | _ -> Error ("Bad fn name for call")
+      
+    
 
 let rec parse_statement parser =
   match parser.current with

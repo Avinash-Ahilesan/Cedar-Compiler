@@ -32,6 +32,7 @@ type token =
   | CloseCurlyBracket
   | OpenSquareBracket
   | CloseSquareBracket
+  | CommaSeparator
   | Semicolon
   | Bang
   | EOF
@@ -123,6 +124,7 @@ let lex_line input_line =
           | '}' -> lex_next (CloseCurlyBracket :: token_list)
           | '[' -> lex_next (OpenSquareBracket :: token_list)
           | ']' -> lex_next (CloseSquareBracket :: token_list)
+          | ',' -> lex_next (CommaSeparator :: token_list)
           | ';' -> lex_next (Semicolon :: token_list)
           | '=' -> lex_next (Assign :: token_list)
           | '!' -> lex_next (Bang :: token_list)
