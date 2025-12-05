@@ -30,7 +30,10 @@ type token =
   | CloseRoundBracket
   | OpenCurlyBracket
   | CloseCurlyBracket
+  | OpenSquareBracket
+  | CloseSquareBracket
   | Semicolon
+  | Bang
   | EOF
 
 type lexer = {
@@ -118,8 +121,11 @@ let lex_line input_line =
           | ')' -> lex_next (CloseRoundBracket :: token_list)
           | '{' -> lex_next (OpenCurlyBracket :: token_list)
           | '}' -> lex_next (CloseCurlyBracket :: token_list)
+          | '[' -> lex_next (OpenSquareBracket :: token_list)
+          | ']' -> lex_next (CloseSquareBracket :: token_list)
           | ';' -> lex_next (Semicolon :: token_list)
           | '=' -> lex_next (Assign :: token_list)
+          | '!' -> lex_next (Bang :: token_list)
           | '+' -> if posn + 1 < String.length input_line then 
                       if String.get input_line (posn + 1) = '+' then (lex_helper (posn + 2) (Increment :: token_list))
                       else lex_next (Plus :: token_list)

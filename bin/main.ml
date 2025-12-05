@@ -9,6 +9,6 @@ open Cedar_Compiler
 let () = print_all_tokens () *)
 
 
-let () = match (Parser.parse ()) with
+let () = match (Parser.parse (Lexer.lex ())) with
   | Ok e -> Parser_printer.print_expr e 
   | Error s -> print_endline s

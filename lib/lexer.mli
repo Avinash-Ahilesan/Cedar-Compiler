@@ -28,7 +28,10 @@ type token =
   | CloseRoundBracket
   | OpenCurlyBracket
   | CloseCurlyBracket
+  | OpenSquareBracket
+  | CloseSquareBracket
   | Semicolon
+  | Bang
   | EOF
 
 type lexer = {
