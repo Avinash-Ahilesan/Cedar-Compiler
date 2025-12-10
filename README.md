@@ -18,3 +18,7 @@ y = 30;
 s = "hello"
 
 ### Expressions 
+
+5 + 6;
+6++;
+++7;

@@ -27,26 +27,26 @@ and postfix_op =
   | FunctionCall
   | ArrayIndex
 
-
-type node = 
-  | Statement of statement
+and statement = 
+  | IfStatement of {condition: expr; then_branch: statement list; else_branch: statement list option}
+  | VariableAssignStatement of {var_name: identifier; value: expr}
   | Expression of expr
 
-and statement = 
-  | IfStatement
+and function_definition = 
   | FunctionDefinition
-  | VariableAssignment
 
 and expr =
   | Factor of factor
   | InfixExpr of expr * infix_op * expr
   | PrefixExpr of prefix_op * expr
   | PostfixExpr of expr * postfix_op
-  | FunctionCallExpr of {fn_name: string; args_list: expr list}
+  | FunctionCallExpr of {fn_name: identifier; args_list: expr list}
 
 and factor =
   | IntFactor of int
-  | IdentFactor of string
+  | IdentFactor of identifier
+
+and identifier = {identifier: string}
 
 let init lexer = 
   let lex_state, curr = next_token lexer
@@ -93,7 +93,7 @@ let peek_is parser tok =
 
 let rec parse_prefix_expr parser = 
   match parser.current with 
-  | Identifier (name) -> Ok (Factor (IdentFactor (name)), parser)
+  | Identifier (name) -> Ok (Factor (IdentFactor {identifier= name}), parser)
   | Integer (value) -> Ok (Factor (IntFactor (value)), parser)
   | OpenRoundBracket -> let parser' = advance parser in 
                           let* expr, parser = (parse_expr parser' 0.0) in 
@@ -160,21 +160,49 @@ and get_fn_name_from_factor x =
 
 let rec parse_statement parser =
   match parser.current with
-    | If -> (parse_if)
-    | Fun -> (parse_fun)
-    | Identifier (_) -> (parse_variable_assign)
-    | _ -> Error ("Could not parse statement")
+    | If -> (parse_if parser)
+    | Identifier (_) when parser.peek = Equals -> (parse_variable_assign parser)
+    | _ -> let* expr, parser = (parse_expr parser 0.0) in Ok (Expression (expr), parser)
 
-and parse_if = 
-  Ok IfStatement
-and parse_fun =
-  Ok FunctionDefinition
-and parse_variable_assign =
-  Ok VariableAssignment
+and parse_if parser = 
+  let parser = advance parser in
+  let* cond_expr, parser = (parse_expr parser 0.0) in
+  let* parser = expect_open_curly parser in
+  let* then_statement_list, parser = (parse_statements parser) in
+  let* parser = expect_close_curly parser in
+  Ok (IfStatement {condition = cond_expr; then_branch = then_statement_list; else_branch = None;}, parser)
 
+and parse_statements parser  = 
+  let rec parse_statement_helper parser stmt_list =
+    let* stmt, parser = (parse_statement parser) in
+      if parser.peek = CloseCurlyBracket then Ok (List.rev (stmt :: stmt_list), parser)
+      else (parse_statement_helper parser (stmt :: stmt_list))
+    in (parse_statement_helper parser [])
+
+and expect_open_curly parser =
+  if parser.current = OpenCurlyBracket then Ok (advance parser) else Error ("Expected open curly bracket, found " ^ (token_to_string parser.current))
+
+and expect_close_curly parser =
+  if parser.current = CloseCurlyBracket then Ok (advance parser) else Error ("Expected close curly bracket, found " ^ (token_to_string parser.current))
+
+
+and parse_variable_assign parser =
+  let* ident, parser = parse_identifier parser in
+  let* parser = expect_assign parser in
+  let*  assign_value, parser = parse_expr parser 0.0 in 
+  Ok ( VariableAssignStatement {var_name = ident; value = assign_value}, parser)
+
+
+and parse_identifier parser = 
+  match parser.current with
+    | Identifier (name) -> Ok ( {identifier = name}, advance parser)
+    | _ -> Error ("expected identifier, found " ^ token_to_string parser.current)
+
+and expect_assign parser = 
+  if parser.current = Equals then Ok (advance parser) else Error ("Expected equals, received" ^ token_to_string parser.current)
 
 let parse lexer = 
   let parser = init lexer in
-    let* lhs, _ = (parse_expr parser 0.0) in  Ok lhs
+    let* lhs, _ = (parse_statement parser) in  Ok lhs
 
 

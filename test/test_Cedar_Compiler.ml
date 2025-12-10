@@ -18,9 +18,9 @@ let test_lex program expected () =
 
 let test_parser_success program expected () = 
   let lexed_program = lex_text_block program in
-    let res = parse {token_list = lexed_program; token_ptr = 0} in
-      match res with 
-        | Ok expr -> check string "same string" expected (Parser_printer.get_expr expr)
+    let stmt_list = parse {token_list = lexed_program; token_ptr = 0} in
+      match stmt_list with 
+        | Ok stmts -> check string "same string" expected (Parser_printer.get_statement stmts)
         | Error e -> fail e
 
 let test_parser_fail program expected_msg () = 
@@ -44,7 +44,7 @@ let suite =
     "pars_test_prefix2", `Quick, test_parser_success "1 + ++a + 2;" "(+ (+ 1 (++ a)) 2)";
     "pars_test_prefix2", `Quick, test_parser_success "++a++;" "((++ a) ++)";
     "pars_test_arr_index", `Quick, test_parser_success "a[55];" "([] a 55)";
-    "pars_test_func_call", `Quick, test_parser_success "a(x);" "(() a x)";
+    "pars_test_func_call", `Quick, test_parser_success "a(x, 5, y, 10) + 20;" "(+ (() a x 5 y 10) 20)";
   ]
 
 let () =
