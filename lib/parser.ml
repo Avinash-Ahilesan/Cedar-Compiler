@@ -109,7 +109,7 @@ and parse_expr parser min_bp =
   if peek_is parser Semicolon then Ok (lhs, parser)
   else 
     let rec parse_infix_op lhs' parser = 
-      if peek_is parser Semicolon then Ok (lhs', parser)
+      if peek_is parser Semicolon then Ok (lhs', advance parser)
       else
         match (get_postfix_op_bp parser) with
         | Some (op, lbp) -> if lbp < min_bp then Ok (lhs', parser) 
@@ -175,7 +175,7 @@ and parse_if parser =
 and parse_statements parser  = 
   let rec parse_statement_helper parser stmt_list =
     let* stmt, parser = (parse_statement parser) in
-      if parser.peek = CloseCurlyBracket then Ok (List.rev (stmt :: stmt_list), parser)
+      if parser.peek = EOF then Ok (List.rev (stmt :: stmt_list), parser)
       else (parse_statement_helper parser (stmt :: stmt_list))
     in (parse_statement_helper parser [])
 
@@ -203,6 +203,6 @@ and expect_assign parser =
 
 let parse lexer = 
   let parser = init lexer in
-    let* lhs, _ = (parse_statement parser) in  Ok lhs
+    let* lhs, _ = (parse_statements parser) in  Ok lhs
 
 

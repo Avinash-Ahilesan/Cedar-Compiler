@@ -20,7 +20,7 @@ let test_parser_success program expected () =
   let lexed_program = lex_text_block program in
     let stmt_list = parse {token_list = lexed_program; token_ptr = 0} in
       match stmt_list with 
-        | Ok stmts -> check string "same string" expected (Parser_printer.get_statement stmts)
+        | Ok stmts -> check string "same string" expected (Parser_printer.get_statement_list stmts)
         | Error e -> fail e
 
 let test_parser_fail program expected_msg () = 

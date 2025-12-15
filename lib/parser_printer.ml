@@ -53,5 +53,9 @@ let rec get_statement statement =
 
 and get_statement_list stmt_list = 
   match stmt_list with 
-    | statement :: rest_of_statements -> get_statement statement ^ get_statement_list rest_of_statements
-    | [] -> "EOF"
+    | statement :: rest_of_statements -> let first_str = 
+                                            get_statement statement in 
+                                              let rest_str = get_statement_list rest_of_statements in 
+                                                if rest_str = "" then first_str
+                                                else first_str ^ "\n" ^ rest_str
+    | [] -> ""
