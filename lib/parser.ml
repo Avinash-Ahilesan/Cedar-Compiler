@@ -106,8 +106,6 @@ let rec parse_prefix_expr parser =
 
 and parse_expr parser min_bp = 
   let* lhs, parser = parse_prefix_expr parser in
-  if peek_is parser Semicolon then Ok (lhs, parser)
-  else 
     let rec parse_infix_op lhs' parser = 
       if peek_is parser Semicolon then Ok (lhs', advance parser)
       else
@@ -161,8 +159,10 @@ and get_fn_name_from_factor x =
 let rec parse_statement parser =
   match parser.current with
     | If -> (parse_if parser)
-    | Identifier (_) when parser.peek = Equals -> (parse_variable_assign parser)
-    | _ -> let* expr, parser = (parse_expr parser 0.0) in Ok (Expression (expr), parser)
+    | Identifier (_) when parser.peek = Assign -> (parse_variable_assign parser)
+    | _ -> let* expr, parser = (parse_expr parser 0.0) in 
+           let* parser = expect_semicolon parser in
+            Ok (Expression (expr),  parser)
 
 and parse_if parser = 
   let parser = advance parser in
@@ -190,6 +190,7 @@ and parse_variable_assign parser =
   let* ident, parser = parse_identifier parser in
   let* parser = expect_assign parser in
   let*  assign_value, parser = parse_expr parser 0.0 in 
+  let* parser = expect_semicolon parser in
   Ok ( VariableAssignStatement {var_name = ident; value = assign_value}, parser)
 
 
@@ -199,7 +200,10 @@ and parse_identifier parser =
     | _ -> Error ("expected identifier, found " ^ token_to_string parser.current)
 
 and expect_assign parser = 
-  if parser.current = Equals then Ok (advance parser) else Error ("Expected equals, received" ^ token_to_string parser.current)
+  if parser.current = Assign then Ok (advance parser) else Error ("Expected equals, but is actually " ^ token_to_string parser.current)
+
+and expect_semicolon parser = 
+  if parser.current = Semicolon then Ok (advance parser) else Error ("Expected semicolon, but is actually " ^ token_to_string parser.current)
 
 let parse lexer = 
   let parser = init lexer in

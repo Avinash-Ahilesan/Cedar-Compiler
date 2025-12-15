@@ -37,7 +37,7 @@ let lexer_basic = [
 ]
 
 let parser_single_line_exprs =
-  [ "pars_basic_addition", `Quick, test_parser_success "1 + 2;" "(+ 1 2)";
+  [ "pars_basic_addition", `Quick, test_parser_success "(1 + 2);" "(+ 1 2)";
     "pars_addition_multiplic", `Quick, test_parser_success "1 + 2 * 3 + 4 * 5;" "(+ (+ 1 (* 2 3)) (* 4 5))";
     "pars_test_all_arith", `Quick, test_parser_success "1 + 2 * 3 / 4 - (5 + 6) / 7;" "(- (+ 1 (/ (* 2 3) 4)) (/ (+ 5 6) 7))"; 
     "pars_test_brackets", `Quick, test_parser_success "(1 + 2) * 3;" "(* (+ 1 2) 3)";
@@ -51,10 +51,15 @@ let parser_single_line_exprs =
     "pars_test_func_call", `Quick, test_parser_success "a(x, 5, y, 10) + 20;" "(+ (() a x 5 y 10) 20)";
   ]
 
-
+let parser_multi_line_statements = [
+  "two_exprs", `Quick, test_parser_success "1 + 2; 2 + 3;" "(+ 1 2)\n(+ 2 3)";
+  "variable_assign", `Quick, test_parser_success "a = 5 + 6;" "(= a (+ 5 6))" ;
+  "two_statements_assign_expr", `Quick, test_parser_success "b = 4+5; 2*9+3;" "(= b (+ 4 5))\n(+ (* 2 9) 3)";
+  "multi_assorted", `Quick, test_parser_success "2*9+4; diablo = 34; diablo + 3; x = 55; x - 2;" "(+ (* 2 9) 4)\n(= diablo 34)\n(+ diablo 3)\n(= x 55)\n(- x 2)"
+]
 
 
 let () =
-  Alcotest.run "Compiler Lexer" [ ("Lexer Basics", lexer_basic);
-                                  ("Parser Single Line Exprs", parser_single_line_exprs);
-                                  ]
+  Alcotest.run "Compiler Lexer" [ "Lexer Basics", lexer_basic;
+                                  "Parser Single Line Exprs", parser_single_line_exprs;
+                                  "Parser Multi Line Statements", parser_multi_line_statements]

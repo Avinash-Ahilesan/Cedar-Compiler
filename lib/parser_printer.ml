@@ -47,7 +47,7 @@ let get_identifier ident =
 let rec get_statement statement = 
   match statement with 
     | IfStatement {condition; then_branch; _} -> get_expr condition ^ get_statement_list then_branch
-    | VariableAssignStatement {var_name; value} -> get_identifier var_name ^ " = " ^ get_expr value
+    | VariableAssignStatement {var_name; value} -> "(= " ^ get_identifier var_name ^ " "  ^ get_expr value ^ ")"
     | Expression expr -> get_expr expr
 
 
