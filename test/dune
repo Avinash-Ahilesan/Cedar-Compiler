@@ -1,4 +1,4 @@
 (test
- (name test_Cedar_Compiler)
+ (name test_Cedar_Compiler_frontend)
   (deps (glob_files data/*))
  (libraries alcotest Cedar_Compiler))
