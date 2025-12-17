@@ -97,7 +97,7 @@ let rec parse_prefix_expr parser =
   | Integer (value) -> Ok (Factor (IntFactor (value)), parser)
   | OpenRoundBracket -> let parser' = advance parser in 
                           let* expr, parser = (parse_expr parser' 0.0) in 
-                            if peek_is parser CloseRoundBracket then Ok (expr, advance parser) else Error "No closing bracket"
+                            if peek_is parser CloseRoundBracket then Ok (expr, advance parser) else Error ("Missing closing bracket, received: " ^ (token_to_string parser.peek))
   | _ -> let* op, rbp = get_prefix_op_bp parser in
           let parser = advance parser in
             let* rhs, parser = (parse_expr parser rbp) in
@@ -158,24 +158,34 @@ and get_fn_name_from_factor x =
 
 let rec parse_statement parser =
   match parser.current with
-    | If -> (parse_if parser)
+    | If -> (parse_if (advance parser))
     | Identifier (_) when parser.peek = Assign -> (parse_variable_assign parser)
     | _ -> let* expr, parser = (parse_expr parser 0.0) in 
            let* parser = expect_semicolon parser in
             Ok (Expression (expr),  parser)
 
 and parse_if parser = 
-  let parser = advance parser in
+  print_endline "BEGGINING";
   let* cond_expr, parser = (parse_expr parser 0.0) in
-  let* parser = expect_open_curly parser in
-  let* then_statement_list, parser = (parse_statements parser) in
-  let* parser = expect_close_curly parser in
-  Ok (IfStatement {condition = cond_expr; then_branch = then_statement_list; else_branch = None;}, parser)
+  if parser.current = Semicolon then Error "Unexpected Semicolon after condition in if statement" else
+    let* parser = expect_open_curly (advance parser) in
+    print_endline ("BEFORE PARSING STATEMENT: " ^ (token_to_string parser.current));
+    let* then_statement_list, parser = (parse_statements parser) in
+    print_endline ("AFTER PARSING STATEMENT: " ^ (token_to_string parser.current));
+    let* parser = expect_close_curly parser in
+    print_endline (token_to_string parser.current);
+    if parser.current = Else then 
+      let* parser = expect_open_curly (advance parser) in
+      let* else_statement_list, parser = (parse_statements parser) in
+      let* parser = expect_close_curly parser in
+           Ok (IfStatement {condition = cond_expr; then_branch = then_statement_list; else_branch = Some else_statement_list;}, parser)
+    else
+      Ok (IfStatement {condition = cond_expr; then_branch = then_statement_list; else_branch = None;}, parser)
 
 and parse_statements parser  = 
   let rec parse_statement_helper parser stmt_list =
     let* stmt, parser = (parse_statement parser) in
-      if parser.peek = EOF then Ok (List.rev (stmt :: stmt_list), parser)
+      if parser.peek = EOF || parser.current = CloseCurlyBracket then Ok (List.rev (stmt :: stmt_list), parser)
       else (parse_statement_helper parser (stmt :: stmt_list))
     in (parse_statement_helper parser [])
 

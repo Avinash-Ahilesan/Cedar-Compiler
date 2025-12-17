@@ -169,6 +169,7 @@ let token_to_string = function
   | String (x) -> "string: " ^ x
   | Assign -> "assign: ="
   | If -> "If: if"
+  | Else -> "Else: else"
   | Boolean (x) -> "bool: " ^ (string_of_bool x)
   | GreaterThan -> ">"
   | Plus -> ": +" 
@@ -180,6 +181,8 @@ let token_to_string = function
   | Equals -> "equals: =="
   | OpenRoundBracket -> "("
   | CloseRoundBracket -> ")"
+  | OpenCurlyBracket -> "{"
+  | CloseCurlyBracket -> "}"
   | EOF -> "END OF FILE"
   | _ -> "To Implement"
 

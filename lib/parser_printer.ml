@@ -40,13 +40,16 @@ let rec get_expr expr =
 let print_expr expr = 
   print_endline (get_expr expr)
 
+
 let get_identifier ident = 
   match ident with
     | { identifier: string } -> identifier  
 
 let rec get_statement statement = 
   match statement with 
-    | IfStatement {condition; then_branch; _} -> get_expr condition ^ get_statement_list then_branch
+    | IfStatement {condition; then_branch; else_branch} -> (match else_branch with
+                                                              | Some else_statement_list -> "(if " ^ get_expr condition ^ " (" ^ get_statement_list then_branch ^ ")" ^ " (" ^ get_statement_list else_statement_list ^ ")" ^ ")"
+                                                              | None ->"(if " ^ get_expr condition ^ " (" ^ get_statement_list then_branch ^ ")" ^ ")" )
     | VariableAssignStatement {var_name; value} -> "(= " ^ get_identifier var_name ^ " "  ^ get_expr value ^ ")"
     | Expression expr -> get_expr expr
 
@@ -59,3 +62,6 @@ and get_statement_list stmt_list =
                                                 if rest_str = "" then first_str
                                                 else first_str ^ "\n" ^ rest_str
     | [] -> ""
+
+let print_program p = 
+  print_endline (get_statement_list p)
