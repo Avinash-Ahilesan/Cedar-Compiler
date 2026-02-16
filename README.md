@@ -15,7 +15,7 @@ y = 30;
 
 ### String
 
-s = "hello"
+s = "hello";
 
 ### Expressions 
 

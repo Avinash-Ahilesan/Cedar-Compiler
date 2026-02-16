@@ -44,6 +44,7 @@ and expr =
 
 and factor =
   | IntFactor of int
+  | StringFactor of string
   | IdentFactor of identifier
 
 and identifier = {identifier: string}
@@ -95,6 +96,7 @@ let rec parse_prefix_expr parser =
   match parser.current with 
   | Identifier (name) -> Ok (Factor (IdentFactor {identifier= name}), parser)
   | Integer (value) -> Ok (Factor (IntFactor (value)), parser)
+  | String (str) -> Ok (Factor (StringFactor (str)), parser)
   | OpenRoundBracket -> let parser' = advance parser in 
                           let* expr, parser = (parse_expr parser' 0.0) in 
                             if peek_is parser CloseRoundBracket then Ok (expr, advance parser) else Error ("Missing closing bracket, received: " ^ (token_to_string parser.peek))
@@ -165,13 +167,10 @@ let rec parse_statement parser =
             Ok (Expression (expr),  parser)
 
 and parse_if parser = 
-  print_endline "BEGGINING";
   let* cond_expr, parser = (parse_expr parser 0.0) in
   if parser.current = Semicolon then Error "Unexpected Semicolon after condition in if statement" else
     let* parser = expect_open_curly (advance parser) in
-    print_endline ("BEFORE PARSING STATEMENT: " ^ (token_to_string parser.current));
     let* then_statement_list, parser = (parse_statements parser) in
-    print_endline ("AFTER PARSING STATEMENT: " ^ (token_to_string parser.current));
     let* parser = expect_close_curly parser in
     print_endline (token_to_string parser.current);
     if parser.current = Else then 

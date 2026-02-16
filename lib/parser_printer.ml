@@ -4,6 +4,7 @@ let get_factor a =
   match a with 
     | IntFactor x -> (string_of_int x)
     | IdentFactor {identifier= x} -> x
+    | StringFactor str -> "\"" ^ str ^ "\""
 let get_op op = 
   match op with 
     | Multiply -> "*"
