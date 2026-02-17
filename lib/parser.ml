@@ -29,12 +29,11 @@ and postfix_op =
 
 and statement = 
   | IfStatement of {condition: expr; then_branch: statement list; else_branch: statement list option}
+  | FunStatement of {fun_name: identifier; args_list: fun_arg list; fun_body: statement list}
   | VariableAssignStatement of {var_name: identifier; value: expr}
   | Expression of expr
 
-and function_definition = 
-  | FunctionDefinition
-
+and fun_arg = {arg: identifier}
 and expr =
   | Factor of factor
   | InfixExpr of expr * infix_op * expr
@@ -123,7 +122,6 @@ and parse_expr parser min_bp =
                                 let* arg_list, parser = (parse_call_expression (advance (advance parser)) []) in
                                   let function_call_expr = (FunctionCallExpr {fn_name = fn_name; args_list = arg_list}) in 
                                     if peek_is parser CloseRoundBracket then (parse_infix_op function_call_expr (advance parser)) else Error "No closing round bracket"
-                                
                               else
                                 let postfix_expr = (PostfixExpr (lhs', op)) in 
                                   (parse_infix_op postfix_expr (advance parser))
@@ -161,10 +159,37 @@ and get_fn_name_from_factor x =
 let rec parse_statement parser =
   match parser.current with
     | If -> (parse_if (advance parser))
+    | Fun -> (parse_fun (advance parser))
     | Identifier (_) when parser.peek = Assign -> (parse_variable_assign parser)
     | _ -> let* expr, parser = (parse_expr parser 0.0) in 
            let* parser = expect_semicolon parser in
             Ok (Expression (expr),  parser)
+
+and parse_fun parser = 
+  let* fun_name, parser = (parse_identifier parser) in
+  let* fun_args, parser = (parse_args parser) in
+  let* parser = expect_open_curly parser in
+  let* fun_body, parser = (parse_statements parser) in
+  let* parser = expect_close_curly parser in
+  Ok (FunStatement {fun_name = fun_name; args_list = fun_args; fun_body = fun_body;}, parser)
+
+and parse_args parser = 
+  let* parser = expect_open_round parser in
+  let* arg_list, parser = parse_args_list parser in
+  let* parser = expect_close_round parser in
+  Ok (arg_list, parser)
+
+and parse_args_list parser = 
+  if parser.current = CloseRoundBracket then Ok([], parser) 
+  else
+    let rec parse_args_helper parser list = 
+      let* ident, parser = (parse_identifier parser) in
+      if parser.current = CommaSeparator then (parse_args_helper (advance parser) ({arg = ident} :: list))
+      else 
+        if parser.current = CloseRoundBracket then Ok(list, parser)
+        else Error "Missing comma or close round bracket"
+    in parse_args_helper parser []
+
 
 and parse_if parser = 
   let* cond_expr, parser = (parse_expr parser 0.0) in
@@ -172,7 +197,6 @@ and parse_if parser =
     let* parser = expect_open_curly (advance parser) in
     let* then_statement_list, parser = (parse_statements parser) in
     let* parser = expect_close_curly parser in
-    print_endline (token_to_string parser.current);
     if parser.current = Else then 
       let* parser = expect_open_curly (advance parser) in
       let* else_statement_list, parser = (parse_statements parser) in
@@ -193,6 +217,12 @@ and expect_open_curly parser =
 
 and expect_close_curly parser =
   if parser.current = CloseCurlyBracket then Ok (advance parser) else Error ("Expected close curly bracket, found " ^ (token_to_string parser.current))
+
+and expect_open_round parser =
+  if parser.current = OpenRoundBracket then Ok (advance parser) else Error ("Expected open round bracket, found " ^ (token_to_string parser.current))
+
+and expect_close_round parser =
+  if parser.current = CloseRoundBracket then Ok (advance parser) else Error ("Expected close round bracket, found " ^ (token_to_string parser.current))
 
 
 and parse_variable_assign parser =

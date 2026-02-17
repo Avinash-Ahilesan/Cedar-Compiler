@@ -46,8 +46,16 @@ let get_identifier ident =
   match ident with
     | { identifier: string } -> identifier  
 
+let get_arg arg = match arg with
+  | { arg = {identifier}} -> identifier
+
+let rec get_args_list args_list = match args_list with
+  | first_arg:: rest_args -> (get_arg first_arg) ^ (get_args_list rest_args)
+  | [] -> ""
+
 let rec get_statement statement = 
   match statement with 
+    | FunStatement {fun_name; args_list; fun_body} -> "(def " ^ get_identifier fun_name ^ " (" ^get_args_list args_list ^ ") "^ " (" ^get_statement_list fun_body ^ ") "
     | IfStatement {condition; then_branch; else_branch} -> (match else_branch with
                                                               | Some else_statement_list -> "(if " ^ get_expr condition ^ " (" ^ get_statement_list then_branch ^ ")" ^ " (" ^ get_statement_list else_statement_list ^ ")" ^ ")"
                                                               | None ->"(if " ^ get_expr condition ^ " (" ^ get_statement_list then_branch ^ ")" ^ ")" )
